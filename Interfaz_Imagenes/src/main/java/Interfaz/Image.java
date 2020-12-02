@@ -127,8 +127,7 @@ public class Image {
     }
 
     private int getVectorPosition(int row, int col, int target) {
-        int pos = ((row) * (this.getWidth()) * this.getProf()) + ((col) * this.getProf()) + (target);
-        return pos;
+        return ((row) * (this.getWidth()) * this.getProf()) + ((col) * this.getProf()) + (target);
     }
 
     private void changeBrightness(int porcentaje) {
@@ -148,42 +147,10 @@ public class Image {
         }
     }
 
-
-    private void changeRed(int porcentaje) {
+    private void changeColor(int porcentaje, int prof){
         for (int i = 0; i < this.getHeight(); i++) {
             for (int j = 0; j < this.getWidth(); j++) {
-                int posicionVector = getVectorPosition(i, j, 2);
-                int valor = Byte.toUnsignedInt(this.getVector()[posicionVector]);
-                valor = (valor * (100 + porcentaje) / 100);
-                if (valor <= 255) {
-                    this.getVector()[posicionVector] = (byte) valor;
-                } else {
-                    this.getVector()[posicionVector] = (byte) 255;
-                }
-            }
-        }
-    }
-
-
-    private void changeGreen(int porcentaje) {
-        for (int i = 0; i < this.getHeight(); i++) {
-            for (int j = 0; j < this.getWidth(); j++) {
-                int posicionVector = getVectorPosition(i, j, 1);
-                int valor = Byte.toUnsignedInt(this.getVector()[posicionVector]);
-                valor = (valor * (100 + porcentaje) / 100);
-                if (valor <= 255) {
-                    this.getVector()[posicionVector] = (byte) valor;
-                } else {
-                    this.getVector()[posicionVector] = (byte) 255;
-                }
-            }
-        }
-    }
-
-    private void changeBlue(int porcentaje) {
-        for (int i = 0; i < this.getHeight(); i++) {
-            for (int j = 0; j < this.getWidth(); j++) {
-                int posicionVector = getVectorPosition(i, j, 0);
+                int posicionVector = getVectorPosition(i, j, prof);
                 int valor = Byte.toUnsignedInt(this.getVector()[posicionVector]);
                 valor = (valor * (100 + porcentaje) / 100);
                 if (valor <= 255) {
@@ -196,9 +163,7 @@ public class Image {
     }
 
     private void resetImage(Image imagenOriginal) {
-        for (int i = 0; i < vector.length; i++) {
-            this.vector[i] = imagenOriginal.vector[i];
-        }
+        System.arraycopy(imagenOriginal.vector, 0, this.vector, 0, vector.length);
     }
 
     private void suavizarImagen(Image origen, Convolucion convolucion, int divisor, int vueltas) {
@@ -209,8 +174,7 @@ public class Image {
             for (int i = 0; i < this.getHeight(); i++) {
                 for (int j = 0; j < this.getWidth(); j++) {
                     for (int k = 0; k < this.getProf(); k++) {
-                        if (i == 0 || j == 0 || i == this.getHeight() - 1 || j == this.getWidth() - 1) {
-                        } else {
+                        if (i != 0 && j != 0 && i != this.getHeight() - 1 && j != this.getWidth() - 1) {
                             int valor = calcularValor(origen, convolucion, i, j, k, divisor);
                             this.getVector()[getVectorPosition(i, j, k)] = (byte) valor;
                         }
@@ -241,13 +205,17 @@ public class Image {
         return valor;
     }
 
-    /**
-     * Calcula el valor medio de los colores rgb del pixel dado
-     *
-     * @param posicionVector posicion del primer color del pixel
-     * @return valor medio
-     */
-    private int actualizarValorMedioBGR(int posicionVector, Image imagenOriginal) {
+
+    private void grayToggle(Image imgOrignal) {
+        for (int i = 0; i < this.getHeight(); i++) {
+            for (int j = 0; j < this.getWidth(); j++) {
+                int posicionVector = getVectorPosition(i, j, 0);
+                updateRGB(posicionVector, imgOrignal);
+            }
+        }
+    }
+
+    private int updateRGB(int posicionVector, Image imagenOriginal) {
         int valor = 0;
         for (int i = 0; i < this.getProf(); i++) {
             valor += Byte.toUnsignedInt(imagenOriginal.getVector()[posicionVector + i]);
@@ -259,11 +227,18 @@ public class Image {
         return valor / 3;
     }
 
-    private void grayToggle(Image imgOrignal) {
-        for (int i = 0; i < this.getHeight(); i++) {
-            for (int j = 0; j < this.getWidth(); j++) {
-                int posicionVector = getVectorPosition(i, j, 0);
-                actualizarValorMedioBGR(posicionVector, imgOrignal);
+    public void changeFocus(Image imagenOriginal){
+
+        resetImage(imagenOriginal);
+
+        if (this.getFocus() != 0) {
+            Convolucion matriz = new Convolucion(3, 3);
+            matriz.fillFocus();
+            if (this.getFocus() > 0) {
+                suavizarImagen(imagenOriginal, matriz, Convolucion.findK(matriz), getFocus());
+
+            } else {
+                suavizarImagen(imagenOriginal,matriz,3, getFocus()*-1);
             }
         }
     }
@@ -272,9 +247,9 @@ public class Image {
         resetImage(imagenOriginal);
 
         changeBrightness(this.getBrightness());
-        changeBlue(this.getBlue());
-        changeGreen(this.getGreen());
-        changeRed(this.getRed());
+        changeColor(this.getBlue(),0);
+        changeColor(this.getGreen(),1);
+        changeColor(this.getRed(),2);
 
         if (gray) {
             this.grayToggle(imagenOriginal);
@@ -282,19 +257,4 @@ public class Image {
 
     }
 
-    public void changeFocus(Image imagenOriginal){
-        if (this.getFocus() != 0) {
-            System.out.println("AAAA");
-            if (this.getFocus() > 0) {
-                Convolucion matriz = new Convolucion(3, 3);
-                matriz.fillBlur();
-                suavizarImagen(imagenOriginal, matriz, Convolucion.findK(matriz), getFocus());
-
-            } else {
-                Convolucion aux = new Convolucion(3,3);
-                aux.fillFocus();
-                suavizarImagen(imagenOriginal,aux,3, getFocus()*-1);
-            }
-        }
-    }
 }

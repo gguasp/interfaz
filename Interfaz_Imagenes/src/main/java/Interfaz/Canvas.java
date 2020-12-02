@@ -11,18 +11,14 @@ public class Canvas extends java.awt.Canvas {
 
     @Override
     public void paint(Graphics g) {
-        System.out.println("Pintando");
         int width = this.getWidth() / 2;
         int height = this.getHeight() / 2;
 
         if (this.getOriginalImage() != null) {
-            System.out.println("No soy nulo");
             g.drawImage(getOriginalImage().getImg(), 0, 0, width, height, this);
             g.drawImage(getImage1().getImg(), width, 0, width, height, this);
             g.drawImage(getImage2().getImg(), 0, height, width, height, this);
             g.drawImage(getImage3().getImg(), width, height, width, height, this);
-        } else {
-            System.out.println("Soy nulo");
         }
     }
 
